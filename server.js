@@ -42,7 +42,7 @@ app.use((err, req, res, next) => {
 });
 
 // Port configuration
-const PORT = process.env.PORT || 3000;
+const PORT = 4000;
 
 // Initialize database and start server
 async function startServer() {
