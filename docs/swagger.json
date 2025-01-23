@@ -1,0 +1,418 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Sistema de Seguimiento de Órdenes",
+        "version": "1.0.0",
+        "description": "API para gestionar órdenes de producción con funcionalidades avanzadas de seguimiento, incluyendo inicio, pausa, reanudación y finalización de órdenes.",
+        "contact": {
+            "name": "Soporte de API",
+            "email": "desarrollos@naturepharma.es"
+        }
+    },
+    "servers": [
+        {
+            "url": "http://192.168.11.116:3000",
+            "description": "Servidor de producción"
+        },
+        {
+            "url": "http://localhost:3000",
+            "description": "Servidor de desarrollo local"
+        }
+      
+    ],
+    "paths": {
+        "/ordenes": {
+            "post": {
+                "summary": "Crear una nueva orden",
+                "description": "Crea una nueva orden de producción con un nombre obligatorio y una descripción opcional",
+                "tags": ["Órdenes"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "nombre": {
+                                        "type": "string",
+                                        "description": "Nombre de la orden de producción",
+                                        "example": "Lote de Producción A"
+                                    },
+                                    "descripcion": {
+                                        "type": "string",
+                                        "description": "Descripción opcional de la orden",
+                                        "example": "Empaquetado de colección de verano"
+                                    }
+                                },
+                                "required": ["nombre"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Orden creada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Orden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error del servidor al crear la orden"
+                    }
+                }
+            },
+            "get": {
+                "summary": "Obtener todas las órdenes",
+                "description": "Recupera todas las órdenes con sus pausas, ordenadas de la más reciente a la más antigua",
+                "tags": ["Órdenes"],
+                "responses": {
+                    "200": {
+                        "description": "Lista de órdenes recuperada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Orden"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error del servidor al recuperar órdenes"
+                    }
+                }
+            }
+        },
+        "/ordenes/{id}/iniciar": {
+            "put": {
+                "summary": "Iniciar una orden",
+                "description": "Inicia una orden de producción que aún no ha comenzado",
+                "tags": ["Órdenes"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Identificador único de la orden"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orden iniciada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Orden"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "400": {
+                        "description": "La orden ya ha sido iniciada"
+                    },
+                    "500": {
+                        "description": "Error del servidor al iniciar la orden"
+                    }
+                }
+            }
+        },
+        "/ordenes/{id}/pausar": {
+            "post": {
+                "summary": "Pausar una orden",
+                "description": "Pausa una orden de producción en curso, requiere un motivo",
+                "tags": ["Órdenes"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Identificador único de la orden"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "motivo": {
+                                        "type": "string",
+                                        "description": "Razón de la pausa",
+                                        "example": "Falta de materiales"
+                                    }
+                                },
+                                "required": ["motivo"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pausa creada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Pausa"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "400": {
+                        "description": "Ya existe una pausa activa para esta orden"
+                    },
+                    "500": {
+                        "description": "Error del servidor al pausar la orden"
+                    }
+                }
+            }
+        },
+        "/ordenes/{id}/reanudar": {
+            "put": {
+                "summary": "Reanudar una orden",
+                "description": "Reanuda una orden que estaba pausada, calculando el tiempo de la pausa",
+                "tags": ["Órdenes"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Identificador único de la orden"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orden reanudada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Pausa"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "400": {
+                        "description": "No hay una pausa activa para esta orden"
+                    },
+                    "500": {
+                        "description": "Error del servidor al reanudar la orden"
+                    }
+                }
+            }
+        },
+        "/ordenes/{id}/finalizar": {
+            "put": {
+                "summary": "Finalizar una orden",
+                "description": "Finaliza una orden de producción, calculando el tiempo total excluyendo pausas",
+                "tags": ["Órdenes"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Identificador único de la orden"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orden finalizada exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Orden"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "400": {
+                        "description": "La orden no ha sido iniciada"
+                    },
+                    "500": {
+                        "description": "Error del servidor al finalizar la orden"
+                    }
+                }
+            }
+        },
+        "/ordenes/{id}/reporte": {
+            "get": {
+                "summary": "Obtener reporte detallado de una orden",
+                "description": "Recupera un informe completo de una orden específica, incluyendo todas sus pausas",
+                "tags": ["Órdenes"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Identificador único de la orden"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de la orden recuperado exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Identificador de la orden"
+                                        },
+                                        "nombre": {
+                                            "type": "string",
+                                            "description": "Nombre de la orden"
+                                        },
+                                        "descripcion": {
+                                            "type": "string",
+                                            "description": "Descripción de la orden"
+                                        },
+                                        "horaInicio": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "description": "Hora de inicio de la orden"
+                                        },
+                                        "horaFin": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "description": "Hora de finalización de la orden"
+                                        },
+                                        "tiempoTotal": {
+                                            "type": "integer",
+                                            "description": "Tiempo total de la orden en segundos (excluyendo pausas)"
+                                        },
+                                        "tiempoTotalPausas": {
+                                            "type": "integer",
+                                            "description": "Tiempo total de pausas en segundos"
+                                        },
+                                        "pausas": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Pausa"
+                                            },
+                                            "description": "Lista de pausas de la orden"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "500": {
+                        "description": "Error del servidor al generar el reporte"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Orden": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Identificador único de la orden"
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre de la orden"
+                    },
+                    "descripcion": {
+                        "type": "string",
+                        "description": "Descripción opcional de la orden"
+                    },
+                    "horaInicio": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hora de inicio de la orden"
+                    },
+                    "horaFin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hora de finalización de la orden"
+                    },
+                    "tiempoTotal": {
+                        "type": "integer",
+                        "description": "Tiempo total de la orden en segundos (excluyendo pausas)"
+                    },
+                    "tiempoTotalPausas": {
+                        "type": "integer",
+                        "description": "Tiempo total de pausas en segundos"
+                    }
+                }
+            },
+            "Pausa": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Identificador único de la pausa"
+                    },
+                    "motivo": {
+                        "type": "string",
+                        "description": "Razón de la pausa"
+                    },
+                    "inicio": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hora de inicio de la pausa"
+                    },
+                    "fin": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Hora de fin de la pausa"
+                    },
+                    "tiempo": {
+                        "type": "integer",
+                        "description": "Duración de la pausa en segundos"
+                    },
+                    "OrdenId": {
+                        "type": "integer",
+                        "description": "Identificador de la orden asociada"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Órdenes",
+            "description": "Operaciones relacionadas con la gestión de órdenes de producción"
+        }
+    ]
+}
